@@ -2,8 +2,6 @@ let messageContent;
 let messageAuthor;
 // let slayCounter = {};
 
-console.log(124);
-
 const observer = new MutationObserver(function (mutations) {
   mutations.forEach(function (mutation) {
     if (mutation.addedNodes.length) {
