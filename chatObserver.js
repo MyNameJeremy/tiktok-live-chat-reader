@@ -8,11 +8,11 @@ const observer = new MutationObserver(function (mutations) {
       messageAuthor = mutation.addedNodes[0].childNodes[1].childNodes[0].getElementsByClassName('tiktok-batvl-SpanNickName')[0].innerHTML;
       messageContent = mutation.addedNodes[0].childNodes[1].childNodes[1].innerHTML;
 
-      if (messageContent.toLowerCase() === 'slay') {
+      if (messageContent.toLowerCase().includes('slay')) {
         if (!slayCounter.hasOwnProperty(messageAuthor)) {
           slayCounter[messageAuthor] = 0;
         }
-        slayCounter[messageAuthor] += 1;
+        slayCounter[messageAuthor] += (messageContent.toLowerCase().match(/slay/g) || []).length;
         console.log(messageAuthor + "'s slay counter is now: " + slayCounter[messageAuthor]);
       }
 
