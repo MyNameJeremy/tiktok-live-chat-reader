@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "tiktok-live-chat-reader",
+  "version": "1.0",
+  "description": "Gets messages from the tiktok live chat and can do stuff with them",
+  "content_scripts": [
+    {
+      "js": ["scripts/content.js"],
+      "matches": ["https://www.tiktok.com/*"]
+    }
+  ]
+}
