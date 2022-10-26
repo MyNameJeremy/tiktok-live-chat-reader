@@ -30,10 +30,6 @@ const observer = new MutationObserver(function (mutations) {
 
       scoreOption1value.innerHTML = score1;
       scoreOption2value.innerHTML = score2;
-
-      // if (messageAuthor && messageContent) {
-      // console.log(messageAuthor + ' schreibt: ' + messageContent);
-      // }
     }
   });
 });
@@ -47,8 +43,6 @@ window.addEventListener('load', function () {
 });
 
 function triggerDisplay() {
-  // console.log(chatWindow);
-
   let display = document.createElement('div');
   display.setAttribute('id', 'display');
 
@@ -370,24 +364,19 @@ function triggerWatcher() {
 }
 
 function triggerEvaluation() {
-  console.log(1);
   let option1 = document.getElementById('option1name').value.replace(' ', '&nbsp;');
   let option2 = document.getElementById('option2name').value.replace(' ', '&nbsp;');
   let winnerDisplays = document.getElementsByClassName('winner');
   if (option1 && option2 && winnerDisplays) {
-    console.log(2);
     let score1 = 0;
     let score2 = 0;
     for (vote in scoreCounter) {
-      console.log(3);
       if (scoreCounter[vote] == '1') {
         score1++;
       } else if (scoreCounter[vote] == '2') {
         score2++;
       }
     }
-    console.log(score1);
-    console.log(score2);
     if (score1 > score2) {
       for (winner in winnerDisplays) {
         setWinners('Winner:&nbsp;' + option1);
