@@ -2,45 +2,67 @@ let messageContent;
 let messageAuthor;
 let scoreCounter = {};
 
+let synth = window.speechSynthesis;
+let utter = new SpeechSynthesisUtterance();
+utter.lang = 'de';
+let voices = synth.getVoices();
+utter.voice = voices[9];
+
+window.addEventListener('load', function () {
+  this.setTimeout(() => {
+    document.getElementsByClassName('tiktok-ba55d9-DivHeaderRightContainer')[0].innerHTML += '<button id="triggerDisplayAndWatcher">test</button>';
+    document.getElementById('triggerDisplayAndWatcher').addEventListener('click', function () {
+      // triggerDisplay();
+      triggerWatcher();
+    });
+  }, 5000);
+});
+
 const observer = new MutationObserver(function (mutations) {
   mutations.forEach(function (mutation) {
     if (mutation.addedNodes.length) {
       messageAuthor = mutation.addedNodes[0].getElementsByClassName('tiktok-batvl-SpanNickName')[0].innerHTML || null;
       messageContent = mutation.addedNodes[0].getElementsByClassName('tiktok-1o9hp7f-SpanChatRoomComment')[0].innerHTML || null;
-      let scoreOption1value = document.getElementById('scoreOption1value');
-      let scoreOption2value = document.getElementById('scoreOption2value');
 
-      if (messageContent == '1' || messageContent == '2') {
-        if (!scoreCounter.hasOwnProperty(messageAuthor)) {
-          scoreCounter[messageAuthor] = '';
-        }
-        scoreCounter[messageAuthor] = messageContent;
-        console.log(messageAuthor + "'s vote is now: " + scoreCounter[messageAuthor]);
-      }
-
-      let score1 = 0;
-      let score2 = 0;
-      for (vote in scoreCounter) {
-        if (scoreCounter[vote] == '1') {
-          score1++;
-        } else if (scoreCounter[vote] == '2') {
-          score2++;
-        }
-      }
-
-      scoreOption1value.innerHTML = score1;
-      scoreOption2value.innerHTML = score2;
+      console.log(messageAuthor + ': ' + messageContent);
+      // changeScore();
+      readOutMessage();
     }
   });
 });
-window.addEventListener('load', function () {
-  this.setTimeout(() => {
-    document.getElementsByClassName('tiktok-ba55d9-DivHeaderRightContainer')[0].innerHTML += '<button id="triggerDisplayAndWatcher">test</button>';
-    document.getElementById('triggerDisplayAndWatcher').addEventListener('click', function () {
-      triggerDisplay();
-    });
-  }, 5000);
-});
+
+function readOutMessage() {
+  if (!synth.speaking) {
+    utter.text = messageContent.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+    synth.speak(utter);
+  }
+}
+
+function changeScore() {
+  let scoreOption1value = document.getElementById('scoreOption1value');
+  let scoreOption2value = document.getElementById('scoreOption2value');
+
+  if (messageContent == '1' || messageContent == '2') {
+    if (!scoreCounter.hasOwnProperty(messageAuthor)) {
+      scoreCounter[messageAuthor] = '';
+    }
+    scoreCounter[messageAuthor] = messageContent;
+    console.log(messageAuthor + "'s vote is now: " + scoreCounter[messageAuthor]);
+  }
+
+  let score1 = 0;
+  let score2 = 0;
+  for (vote in scoreCounter) {
+    if (scoreCounter[vote] == '1') {
+      score1++;
+    } else if (scoreCounter[vote] == '2') {
+      score2++;
+    }
+  }
+
+  scoreOption1value.innerHTML = score1;
+  scoreOption2value.innerHTML = score2;
+}
 
 function triggerDisplay() {
   let display = document.createElement('div');
