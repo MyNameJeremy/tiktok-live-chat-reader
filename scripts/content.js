@@ -1,6 +1,8 @@
 let messageContent;
 let messageAuthor;
+let donation;
 let scoreCounter = {};
+let donators = [];
 
 let synth = window.speechSynthesis;
 let utter = new SpeechSynthesisUtterance();
@@ -21,21 +23,52 @@ window.addEventListener('load', function () {
 const observer = new MutationObserver(function (mutations) {
   mutations.forEach(function (mutation) {
     if (mutation.addedNodes.length) {
-      messageAuthor = mutation.addedNodes[0].getElementsByClassName('tiktok-batvl-SpanNickName')[0].innerHTML || null;
-      messageContent = mutation.addedNodes[0].getElementsByClassName('tiktok-1o9hp7f-SpanChatRoomComment')[0].innerHTML || null;
+      let tryAuthor = mutation.addedNodes[0].getElementsByClassName('tiktok-batvl-SpanNickName');
+      messageAuthor = tryAuthor.length ? tryAuthor[0].innerHTML : '';
 
-      console.log(messageAuthor + ': ' + messageContent);
+      let tryMessage = mutation.addedNodes[0].getElementsByClassName('tiktok-1o9hp7f-SpanChatRoomComment');
+      messageContent = tryMessage.length ? tryMessage[0].innerHTML : '';
+
+      let tryDonation = mutation.addedNodes[0].getElementsByClassName('tiktok-ntrujy');
+      donation = tryDonation.length ? tryDonation[0].innerHTML : '';
+
+      if (donation) {
+        console.log(`DONATION BY ${messageAuthor}`);
+        if (messageAuthor && !donators.includes(messageAuthor)) {
+          console.log('new donator');
+          donators.push(messageAuthor);
+          console.table(donators);
+        }
+      }
+      if (messageAuthor && messageContent) {
+        console.log(`${messageAuthor} : ${messageContent}`);
+      }
+
+      if (!donation && donators.includes(messageAuthor) && !synth.speaking) {
+        console.log('before reading out message');
+        readOutMessage();
+        donators.splice(donators.indexOf(messageAuthor), 1);
+      }
+
       // changeScore();
-      readOutMessage();
     }
   });
 });
 
-function readOutMessage() {
-  if (!synth.speaking) {
-    utter.text = messageContent.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
-    synth.speak(utter);
+function triggerWatcher() {
+  const chatWindow = document.getElementsByClassName('tiktok-1gwk1og-DivChatMessageList')[0];
+
+  if (chatWindow) {
+    observer.observe(chatWindow, {
+      childList: true,
+    });
   }
+}
+
+function readOutMessage() {
+  console.log('reading out message');
+  utter.text = messageContent.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+  synth.speak(utter);
 }
 
 function changeScore() {
@@ -373,16 +406,6 @@ function triggerDisplay() {
       console.log('set option names first');
     }
   });
-}
-
-function triggerWatcher() {
-  const chatWindow = document.getElementsByClassName('tiktok-1gwk1og-DivChatMessageList')[0];
-
-  if (chatWindow) {
-    observer.observe(chatWindow, {
-      childList: true,
-    });
-  }
 }
 
 function triggerEvaluation() {
