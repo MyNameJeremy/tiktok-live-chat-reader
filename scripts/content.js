@@ -50,8 +50,10 @@ const observer = new MutationObserver(function (mutations) {
           console.log('before reading out message');
           readOutMessage();
           donators.splice(donators.indexOf(messageAuthor), 1);
+        } else {
+          console.log("not a donator's message");
         }
-      } else {
+      } else if (!synth.speaking) {
         readOutMessage();
       }
 
@@ -74,6 +76,7 @@ function readOutMessage() {
   console.log('reading out message');
   utter.text = messageContent.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
   synth.speak(utter);
+  messageContent = '';
 }
 
 function changeScore() {
