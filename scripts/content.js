@@ -1,6 +1,3 @@
-let messageContent;
-let messageAuthor;
-let donation;
 let scoreCounter = {};
 let donators = [];
 
@@ -9,6 +6,12 @@ let utter = new SpeechSynthesisUtterance();
 utter.lang = 'de';
 let voices = synth.getVoices();
 utter.voice = voices[9];
+const webSocket = new WebSocket('put the websocket url here');
+
+webSocket.addEventListener('message', ({ data }) => {
+  console.log(data);
+  readOutMessage(data);
+});
 
 window.addEventListener('load', function () {
   this.setTimeout(() => {
@@ -25,13 +28,13 @@ const observer = new MutationObserver(function (mutations) {
   mutations.forEach(function (mutation) {
     if (mutation.addedNodes.length) {
       let tryAuthor = mutation.addedNodes[0].getElementsByClassName('tiktok-batvl-SpanNickName');
-      messageAuthor = tryAuthor.length ? tryAuthor[0].innerHTML : '';
+      let messageAuthor = tryAuthor.length ? tryAuthor[0].innerHTML : '';
 
       let tryMessage = mutation.addedNodes[0].getElementsByClassName('tiktok-1o9hp7f-SpanChatRoomComment');
-      messageContent = tryMessage.length ? tryMessage[0].innerHTML : '';
+      let message = tryMessage.length ? tryMessage[0].innerHTML : '';
 
       let tryDonation = mutation.addedNodes[0].getElementsByClassName('tiktok-ntrujy');
-      donation = tryDonation.length ? tryDonation[0].innerHTML : '';
+      let donation = tryDonation.length ? tryDonation[0].innerHTML : '';
 
       if (donation) {
         console.log(`DONATION BY ${messageAuthor}`);
@@ -41,20 +44,16 @@ const observer = new MutationObserver(function (mutations) {
           console.table(donators);
         }
       }
-      if (messageAuthor && messageContent) {
-        console.log(`${messageAuthor} : ${messageContent}`);
-      }
 
-      if (document.getElementById('donorOnlyMode').checked) {
-        if (!donation && donators.includes(messageAuthor) && !synth.speaking) {
-          console.log('before reading out message');
-          readOutMessage();
+      if (messageAuthor && !synth.speaking && message) {
+        // console.log(`${messageAuthor} : ${message}`);
+        if (document.getElementById('donorOnlyMode').checked) {
+          if (!donators.includes(messageAuthor)) {
+            return;
+          }
           donators.splice(donators.indexOf(messageAuthor), 1);
-        } else {
-          console.log("not a donator's message");
         }
-      } else if (!synth.speaking) {
-        readOutMessage();
+        webSocket.send(message);
       }
 
       // changeScore();
@@ -72,22 +71,21 @@ function triggerWatcher() {
   }
 }
 
-function readOutMessage() {
+function readOutMessage(message) {
   console.log('reading out message');
-  utter.text = messageContent.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+  utter.text = message;
   synth.speak(utter);
-  messageContent = '';
 }
 
 function changeScore() {
   let scoreOption1value = document.getElementById('scoreOption1value');
   let scoreOption2value = document.getElementById('scoreOption2value');
 
-  if (messageContent == '1' || messageContent == '2') {
+  if (message == '1' || message == '2') {
     if (!scoreCounter.hasOwnProperty(messageAuthor)) {
       scoreCounter[messageAuthor] = '';
     }
-    scoreCounter[messageAuthor] = messageContent;
+    scoreCounter[messageAuthor] = message;
     console.log(messageAuthor + "'s vote is now: " + scoreCounter[messageAuthor]);
   }
 
