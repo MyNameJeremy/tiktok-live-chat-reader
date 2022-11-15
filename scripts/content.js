@@ -6,105 +6,113 @@ let utter = new SpeechSynthesisUtterance();
 utter.lang = 'de';
 let voices = synth.getVoices();
 utter.voice = voices[9];
-const webSocket = new WebSocket('put the websocket url here');
 
-webSocket.addEventListener('message', ({ data }) => {
-  console.log(data);
-  readOutMessage(data);
-});
+const ipFile = chrome.runtime.getURL('ip.txt');
+// save content to variable called ipAdress
+let ipAddress = '';
+fetch(ipFile)
+  .then((response) => response.text())
+  .then((text) => {
+    ipAddress = text;
+    const webSocket = new WebSocket(`ws://${ipAddress}:8080`);
 
-window.addEventListener('load', function () {
-  this.setTimeout(() => {
-    document.getElementsByClassName('tiktok-ba55d9-DivHeaderRightContainer')[0].innerHTML += '<button id="triggerDisplayAndWatcher">test</button>';
-    document.getElementById('triggerDisplayAndWatcher').addEventListener('click', function () {
-      // triggerDisplay();
-      addDonorOnlySwitch();
-      triggerWatcher();
+    webSocket.addEventListener('message', ({ data }) => {
+      console.log(data);
+      readOutMessage(data);
     });
-  }, 5000);
-});
 
-const observer = new MutationObserver(function (mutations) {
-  mutations.forEach(function (mutation) {
-    if (mutation.addedNodes.length) {
-      let tryAuthor = mutation.addedNodes[0].getElementsByClassName('tiktok-batvl-SpanNickName');
-      let messageAuthor = tryAuthor.length ? tryAuthor[0].innerHTML : '';
+    window.addEventListener('load', function () {
+      this.setTimeout(() => {
+        document.getElementsByClassName('tiktok-ba55d9-DivHeaderRightContainer')[0].innerHTML += '<button id="triggerDisplayAndWatcher">test</button>';
+        document.getElementById('triggerDisplayAndWatcher').addEventListener('click', function () {
+          // triggerDisplay();
+          addDonorOnlySwitch();
+          triggerWatcher();
+        });
+      }, 5000);
+    });
 
-      let tryMessage = mutation.addedNodes[0].getElementsByClassName('tiktok-1o9hp7f-SpanChatRoomComment');
-      let message = tryMessage.length ? tryMessage[0].innerHTML : '';
+    const observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        if (mutation.addedNodes.length) {
+          let tryAuthor = mutation.addedNodes[0].getElementsByClassName('tiktok-batvl-SpanNickName');
+          let messageAuthor = tryAuthor.length ? tryAuthor[0].innerHTML : '';
 
-      let tryDonation = mutation.addedNodes[0].getElementsByClassName('tiktok-ntrujy');
-      let donation = tryDonation.length ? tryDonation[0].innerHTML : '';
+          let tryMessage = mutation.addedNodes[0].getElementsByClassName('tiktok-1o9hp7f-SpanChatRoomComment');
+          let message = tryMessage.length ? tryMessage[0].innerHTML : '';
 
-      if (donation) {
-        console.log(`DONATION BY ${messageAuthor}`);
-        if (messageAuthor && !donators.includes(messageAuthor)) {
-          console.log('new donator');
-          donators.push(messageAuthor);
-          console.table(donators);
-        }
-      }
+          let tryDonation = mutation.addedNodes[0].getElementsByClassName('tiktok-ntrujy');
+          let donation = tryDonation.length ? tryDonation[0].innerHTML : '';
 
-      if (messageAuthor && !synth.speaking && message) {
-        // console.log(`${messageAuthor} : ${message}`);
-        if (document.getElementById('donorOnlyMode').checked) {
-          if (!donators.includes(messageAuthor)) {
-            return;
+          if (donation) {
+            console.log(`DONATION BY ${messageAuthor}`);
+            if (messageAuthor && !donators.includes(messageAuthor)) {
+              console.log('new donator');
+              donators.push(messageAuthor);
+              console.table(donators);
+            }
           }
-          donators.splice(donators.indexOf(messageAuthor), 1);
+
+          if (messageAuthor && !synth.speaking && message) {
+            // console.log(`${messageAuthor} : ${message}`);
+            if (document.getElementById('donorOnlyMode').checked) {
+              if (!donators.includes(messageAuthor)) {
+                return;
+              }
+              donators.splice(donators.indexOf(messageAuthor), 1);
+            }
+            webSocket.send(message);
+          }
+
+          // changeScore();
         }
-        webSocket.send(message);
+      });
+    });
+
+    function triggerWatcher() {
+      const chatWindow = document.getElementsByClassName('tiktok-1gwk1og-DivChatMessageList')[0];
+
+      if (chatWindow) {
+        observer.observe(chatWindow, {
+          childList: true,
+        });
+      }
+    }
+
+    function readOutMessage(message) {
+      console.log('reading out message');
+      utter.text = message;
+      synth.speak(utter);
+    }
+
+    function changeScore() {
+      let scoreOption1value = document.getElementById('scoreOption1value');
+      let scoreOption2value = document.getElementById('scoreOption2value');
+
+      if (message == '1' || message == '2') {
+        if (!scoreCounter.hasOwnProperty(messageAuthor)) {
+          scoreCounter[messageAuthor] = '';
+        }
+        scoreCounter[messageAuthor] = message;
+        console.log(messageAuthor + "'s vote is now: " + scoreCounter[messageAuthor]);
       }
 
-      // changeScore();
+      let score1 = 0;
+      let score2 = 0;
+      for (vote in scoreCounter) {
+        if (scoreCounter[vote] == '1') {
+          score1++;
+        } else if (scoreCounter[vote] == '2') {
+          score2++;
+        }
+      }
+
+      scoreOption1value.innerHTML = score1;
+      scoreOption2value.innerHTML = score2;
     }
-  });
-});
 
-function triggerWatcher() {
-  const chatWindow = document.getElementsByClassName('tiktok-1gwk1og-DivChatMessageList')[0];
-
-  if (chatWindow) {
-    observer.observe(chatWindow, {
-      childList: true,
-    });
-  }
-}
-
-function readOutMessage(message) {
-  console.log('reading out message');
-  utter.text = message;
-  synth.speak(utter);
-}
-
-function changeScore() {
-  let scoreOption1value = document.getElementById('scoreOption1value');
-  let scoreOption2value = document.getElementById('scoreOption2value');
-
-  if (message == '1' || message == '2') {
-    if (!scoreCounter.hasOwnProperty(messageAuthor)) {
-      scoreCounter[messageAuthor] = '';
-    }
-    scoreCounter[messageAuthor] = message;
-    console.log(messageAuthor + "'s vote is now: " + scoreCounter[messageAuthor]);
-  }
-
-  let score1 = 0;
-  let score2 = 0;
-  for (vote in scoreCounter) {
-    if (scoreCounter[vote] == '1') {
-      score1++;
-    } else if (scoreCounter[vote] == '2') {
-      score2++;
-    }
-  }
-
-  scoreOption1value.innerHTML = score1;
-  scoreOption2value.innerHTML = score2;
-}
-
-function addDonorOnlySwitch() {
-  let switchHTML = `
+    function addDonorOnlySwitch() {
+      let switchHTML = `
   <style>
   .switch {
     position: relative;
@@ -179,14 +187,14 @@ function addDonorOnlySwitch() {
   <span class="slider"></span>
 </label>
   `;
-  document.getElementsByClassName('tiktok-kidgju-DivHeaderWrapperMain')[0].innerHTML += switchHTML;
-}
+      document.getElementsByClassName('tiktok-kidgju-DivHeaderWrapperMain')[0].innerHTML += switchHTML;
+    }
 
-function triggerDisplay() {
-  let display = document.createElement('div');
-  display.setAttribute('id', 'display');
+    function triggerDisplay() {
+      let display = document.createElement('div');
+      display.setAttribute('id', 'display');
 
-  let ui_css = `
+      let ui_css = `
   body {
     background: #232323;
   }
@@ -432,7 +440,7 @@ function triggerDisplay() {
   }
   `;
 
-  let ui_html = `
+      let ui_html = `
   <div id="display">
   <div class="form">
     <div class="input-group">
@@ -460,67 +468,68 @@ function triggerDisplay() {
 
   `;
 
-  display.innerHTML += '<style>' + ui_css + '</style>';
-  display.innerHTML += ui_html;
-  this.document.getElementsByTagName('body')[0].appendChild(display);
-  document.getElementsByClassName('vidiq-c-lesPJm')[0].remove();
+      display.innerHTML += '<style>' + ui_css + '</style>';
+      display.innerHTML += ui_html;
+      this.document.getElementsByTagName('body')[0].appendChild(display);
+      document.getElementsByClassName('vidiq-c-lesPJm')[0].remove();
 
-  document.getElementById('start-survey').addEventListener('click', function () {
-    let option1 = document.getElementById('option1name').value;
-    let option2 = document.getElementById('option2name').value;
+      document.getElementById('start-survey').addEventListener('click', function () {
+        let option1 = document.getElementById('option1name').value;
+        let option2 = document.getElementById('option2name').value;
 
-    if (option1 && option2) {
-      let scoreOption2 = document.getElementById('score-option-2');
-      let scoreOption1 = document.getElementById('score-option-1');
-      scoreOption1.innerHTML += '<p>Votes for ' + option1 + ' (1 in den chat): <span id="scoreOption1value">0</span></p>';
-      scoreOption2.innerHTML += '<p>Votes for ' + option2 + ' (2 in den chat): <span id="scoreOption2value">0</span></p>';
-      document.getElementsByClassName('display')[0].innerHTML += '<button class="evaluate"><span>auswerten</span><i></i></button>';
-      document.getElementsByClassName('display')[0].innerHTML += `
+        if (option1 && option2) {
+          let scoreOption2 = document.getElementById('score-option-2');
+          let scoreOption1 = document.getElementById('score-option-1');
+          scoreOption1.innerHTML += '<p>Votes for ' + option1 + ' (1 in den chat): <span id="scoreOption1value">0</span></p>';
+          scoreOption2.innerHTML += '<p>Votes for ' + option2 + ' (2 in den chat): <span id="scoreOption2value">0</span></p>';
+          document.getElementsByClassName('display')[0].innerHTML += '<button class="evaluate"><span>auswerten</span><i></i></button>';
+          document.getElementsByClassName('display')[0].innerHTML += `
       <p class="winner-display">
         <span class="winner"></span>
         <span class="winner"></span>
       </p>`;
-      document.getElementById('triggerDisplayAndWatcher').addEventListener('click', function () {
-        triggerDisplay();
+          document.getElementById('triggerDisplayAndWatcher').addEventListener('click', function () {
+            triggerDisplay();
+          });
+          document.getElementsByClassName('evaluate')[0].addEventListener('click', function () {
+            triggerEvaluation();
+          });
+          triggerWatcher();
+        } else {
+          console.log('set option names first');
+        }
       });
-      document.getElementsByClassName('evaluate')[0].addEventListener('click', function () {
-        triggerEvaluation();
-      });
-      triggerWatcher();
-    } else {
-      console.log('set option names first');
+    }
+
+    function triggerEvaluation() {
+      let option1 = document.getElementById('option1name').value.replace(' ', '&nbsp;');
+      let option2 = document.getElementById('option2name').value.replace(' ', '&nbsp;');
+      let winnerDisplays = document.getElementsByClassName('winner');
+      if (option1 && option2 && winnerDisplays) {
+        let score1 = 0;
+        let score2 = 0;
+        for (vote in scoreCounter) {
+          if (scoreCounter[vote] == '1') {
+            score1++;
+          } else if (scoreCounter[vote] == '2') {
+            score2++;
+          }
+        }
+        if (score1 > score2) {
+          for (winner in winnerDisplays) {
+            setWinners('Winner:&nbsp;' + option1);
+          }
+        } else if (score2 > score1) {
+          setWinners('Winner:&nbsp;' + option2);
+        } else if (score1 == score2) {
+          setWinners("No&nbsp;winner.&nbsp;It's&nbsp;a&nbsp;draw");
+        }
+      }
+    }
+
+    function setWinners(winner) {
+      let winnerDisplays = document.getElementsByClassName('winner');
+      winnerDisplays[0].innerHTML = winner;
+      winnerDisplays[1].innerHTML = winner;
     }
   });
-}
-
-function triggerEvaluation() {
-  let option1 = document.getElementById('option1name').value.replace(' ', '&nbsp;');
-  let option2 = document.getElementById('option2name').value.replace(' ', '&nbsp;');
-  let winnerDisplays = document.getElementsByClassName('winner');
-  if (option1 && option2 && winnerDisplays) {
-    let score1 = 0;
-    let score2 = 0;
-    for (vote in scoreCounter) {
-      if (scoreCounter[vote] == '1') {
-        score1++;
-      } else if (scoreCounter[vote] == '2') {
-        score2++;
-      }
-    }
-    if (score1 > score2) {
-      for (winner in winnerDisplays) {
-        setWinners('Winner:&nbsp;' + option1);
-      }
-    } else if (score2 > score1) {
-      setWinners('Winner:&nbsp;' + option2);
-    } else if (score1 == score2) {
-      setWinners("No&nbsp;winner.&nbsp;It's&nbsp;a&nbsp;draw");
-    }
-  }
-}
-
-function setWinners(winner) {
-  let winnerDisplays = document.getElementsByClassName('winner');
-  winnerDisplays[0].innerHTML = winner;
-  winnerDisplays[1].innerHTML = winner;
-}

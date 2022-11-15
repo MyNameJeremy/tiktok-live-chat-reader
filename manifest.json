@@ -8,5 +8,11 @@
       "js": ["scripts/content.js"],
       "matches": ["https://www.tiktok.com/*/live"]
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["ip.txt"],
+      "matches": ["<all_urls>"]
+    }
   ]
 }
