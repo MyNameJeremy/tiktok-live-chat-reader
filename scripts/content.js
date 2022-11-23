@@ -6,19 +6,20 @@ let utter = new SpeechSynthesisUtterance();
 utter.lang = 'de';
 let voices = synth.getVoices();
 utter.voice = voices[9];
+let now = Date.now();
 
 const ipFile = chrome.runtime.getURL('ip.txt');
 // save content to variable called ipAdress
 let ipAddress = '';
 fetch(ipFile)
   .then((response) => response.text())
-  .then((text) => {
-    ipAddress = text;
-    const webSocket = new WebSocket(`ws://${ipAddress}:8080`);
+  .then((ipAddress) => {
+    let webSocket = new WebSocket(`ws://${ipAddress}:8080`);
 
-    webSocket.addEventListener('message', ({ data }) => {
-      console.log(data);
-      readOutMessage(data);
+    webSocket.addEventListener('message', ({ data: message }) => {
+      if (!message) return;
+      console.log(message);
+      readOutMessage(message);
     });
 
     window.addEventListener('load', function () {
@@ -63,8 +64,6 @@ fetch(ipFile)
             }
             webSocket.send(message);
           }
-
-          // changeScore();
         }
       });
     });
@@ -80,9 +79,15 @@ fetch(ipFile)
     }
 
     function readOutMessage(message) {
+      if (Date.now() - now < 500) {
+        console.log('Too fast');
+        return;
+      }
+
       console.log('reading out message');
       utter.text = message;
       synth.speak(utter);
+      now = Date.now();
     }
 
     function changeScore() {
@@ -112,7 +117,7 @@ fetch(ipFile)
     }
 
     function addDonorOnlySwitch() {
-      let switchHTML = `
+      let switchHTML = /*html*/ `
   <style>
   .switch {
     position: relative;
@@ -194,7 +199,7 @@ fetch(ipFile)
       let display = document.createElement('div');
       display.setAttribute('id', 'display');
 
-      let ui_css = `
+      let ui_css = /*css*/ `
   body {
     background: #232323;
   }
@@ -440,7 +445,7 @@ fetch(ipFile)
   }
   `;
 
-      let ui_html = `
+      let ui_html = /*html*/ `
   <div id="display">
   <div class="form">
     <div class="input-group">
@@ -468,7 +473,7 @@ fetch(ipFile)
 
   `;
 
-      display.innerHTML += '<style>' + ui_css + '</style>';
+      display.innerHTML += /*inline-html*/ `<style> ${ui_css} </style>`;
       display.innerHTML += ui_html;
       this.document.getElementsByTagName('body')[0].appendChild(display);
       document.getElementsByClassName('vidiq-c-lesPJm')[0].remove();
@@ -480,10 +485,10 @@ fetch(ipFile)
         if (option1 && option2) {
           let scoreOption2 = document.getElementById('score-option-2');
           let scoreOption1 = document.getElementById('score-option-1');
-          scoreOption1.innerHTML += '<p>Votes for ' + option1 + ' (1 in den chat): <span id="scoreOption1value">0</span></p>';
-          scoreOption2.innerHTML += '<p>Votes for ' + option2 + ' (2 in den chat): <span id="scoreOption2value">0</span></p>';
-          document.getElementsByClassName('display')[0].innerHTML += '<button class="evaluate"><span>auswerten</span><i></i></button>';
-          document.getElementsByClassName('display')[0].innerHTML += `
+          scoreOption1.innerHTML += /*inline-html*/ `<p>Votes for ${option1} (1 in den chat): <span id="scoreOption1value">0</span></p>`;
+          scoreOption2.innerHTML += /*inline-html*/ `<p>Votes for ${option2} (2 in den chat): <span id="scoreOption2value">0</span></p>`;
+          document.getElementsByClassName('display')[0].innerHTML += /*inline-html*/ `<button class="evaluate"><span>auswerten</span><i></i></button>`;
+          document.getElementsByClassName('display')[0].innerHTML += /*inline-html*/ `
       <p class="winner-display">
         <span class="winner"></span>
         <span class="winner"></span>
