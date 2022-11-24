@@ -15,12 +15,7 @@ fetch(ipFile)
   .then((response) => response.text())
   .then((ipAddress) => {
     let webSocket = new WebSocket(`ws://${ipAddress}:8080`);
-
-    webSocket.addEventListener('message', ({ data: message }) => {
-      if (!message) return;
-      console.log(message);
-      readOutMessage(message);
-    });
+    addMessageListener(webSocket);
 
     window.addEventListener('load', function () {
       this.setTimeout(() => {
@@ -63,11 +58,19 @@ fetch(ipFile)
               }
               donators.splice(donators.indexOf(messageAuthor), 1);
             }
-            webSocket.send(message);
+            webSocket.send(JSON.stringify([message, messageAuthor]));
           }
         }
       });
     });
+
+    function addMessageListener(webSocket) {
+      webSocket.addEventListener('message', ({ data: message }) => {
+        if (!message) return;
+        console.log(message);
+        readOutMessage(message);
+      });
+    }
 
     function triggerWatcher() {
       const chatWindow = document.getElementsByClassName('tiktok-1gwk1og-DivChatMessageList')[0];
@@ -127,7 +130,6 @@ fetch(ipFile)
           border: 3px ridge #149CEA;
           outline: none;
           background-color: transparent;
-          color: white;
           transition: 1s;
           border-radius: 0.3em;
           font-size: 16px;
@@ -141,7 +143,7 @@ fetch(ipFile)
           left: 3%;
           width: 95%;
           height: 40%;
-          background-color: #212121;
+          background-color: #fff;
           transition: 0.5s;
           transform-origin: center;
           }
@@ -150,11 +152,11 @@ fetch(ipFile)
           content: "";
           transform-origin: center;
           position: absolute;
-          top: 80%;
+          top: 90%;
           left: 3%;
           width: 95%;
-          height: 40%;
-          background-color: #212121;
+          height: 30%;
+          background-color: #fff;
           transition: 0.5s;
           }
 
@@ -163,7 +165,9 @@ fetch(ipFile)
           }
 
           #reconnect-button:hover {
-          box-shadow: inset 0px 0px 25px #1479EA;
+          box-shadow: 
+          inset 0px 12px 8px -10px #1479EA,
+          inset 0px -12px 8px -10px #1479EA;
           }
         </style>
         <button id="reconnect-button">
@@ -174,6 +178,7 @@ fetch(ipFile)
       document.getElementById('reconnect-button').addEventListener('click', function () {
         webSocket.close();
         webSocket = new WebSocket(`ws://${ipAddress}:8080`);
+        addMessageListener(webSocket);
       });
     }
 
